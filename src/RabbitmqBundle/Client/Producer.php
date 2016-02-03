@@ -3,8 +3,6 @@ namespace IvixLabs\RabbitmqBundle\Client;
 
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
-use PhpAmqpLib\Channel\AMQPChannel;
-use PhpAmqpLib\Message\AMQPMessage;
 
 class Producer
 {
@@ -21,9 +19,9 @@ class Producer
     private $connectionFactory;
 
     /**
-     * @var AMQPChannel
+     * @var \AMQPExchange
      */
-    private $channel;
+    private $exchange;
 
     /**
      * Producer constructor.
@@ -38,31 +36,20 @@ class Producer
 
     public function publish(MessageInterface $message)
     {
-        $channel = $this->getChannel();
-        $msg = new AMQPMessage($message->toString());
-        $channel->basic_publish($msg, $message->getExchange(), $message->getQueue());
+        $exchange= $this->getExchange($message->getExchange());
+        $exchange->publish($message->toString(), $message->getQueue());
     }
 
-    public function add(MessageInterface $message)
+    /**
+     * @param $name
+     * @return \AMQPExchange
+     */
+    private function getExchange($name)
     {
-        $channel = $this->getChannel();
-        $msg = new AMQPMessage($message->toString());
-        $channel->batch_basic_publish($msg, $message->getExchange(), $message->getQueue());
-    }
-
-    public function flush() {
-        $channel = $this->getChannel();
-        $channel->publish_batch();
-    }
-
-
-    private function getChannel()
-    {
-        if ($this->channel === null) {
-            $connection = $this->connectionFactory->getConnection($this->connectionName);
-            $this->channel = $connection->channel();
+        if ($this->exchange === null) {
+            $this->exchange = $this->connectionFactory->getExchange($this->connectionName, null, $name);
         }
 
-        return $this->channel;
+        return $this->exchange;
     }
 }

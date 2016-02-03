@@ -7,7 +7,7 @@ use IvixLabs\RabbitmqBundle\Annotation\ConsumerConnection;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
-use PhpAmqpLib\Message\AMQPMessage;
+use AMQPEnvelope;
 
 class WorkerLauncher
 {
@@ -135,8 +135,8 @@ class WorkerLauncher
             $channel->basic_qos(null, 1, null);
 
             $closure = $method->getClosure($this->worker);
-            $callback = function (AMQPMessage $msg) use ($closure) {
-                $id = $msg->get('exchange') . '_' . $msg->get('routing_key');
+            $callback = function (AMQPEnvelope $msg) use ($closure) {
+                $id = $msg->getExchangeName() . '_' . $msg->getRoutingKey();
                 /** @var Consumer $annotation */
                 list($taskClass, $annotation) = $this->taskClasses[$id];
 

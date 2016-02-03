@@ -1,12 +1,10 @@
 <?php
 namespace IvixLabs\RabbitmqBundle\Client;
 
-
 use IvixLabs\RabbitmqBundle\Annotation;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
-use PhpAmqpLib\Message\AMQPMessage;
 
 class Consumer
 {
@@ -57,7 +55,7 @@ class Consumer
             }
             foreach ($methodAnnotations AS $annotation) {
                 if ($annotation instanceof Annotation\Consumer) {
-                    $this->consumerSettings->attach($annotation, $method);
+                    $this->consumerSettings[$annotation] = $method;
                     $id = $annotation->exchange['name'] . '_' . $annotation->queue['name'];
                     $this->taskClasses[$id] = [$taskClass, $annotation];
                 }
@@ -68,10 +66,6 @@ class Consumer
 
     public function execute()
     {
-
-        $connection = $this->connectionFactory->getConnection($this->connectionName);
-        $channel = $connection->channel();
-
         /**
          * @var \ReflectionMethod $method
          * @var Consumer $consumer
@@ -98,16 +92,19 @@ class Consumer
                 $queueAutoDelete = false;
             }
 
-            list($queueName, ,) = $channel->queue_declare(
-                $consumer->queue['name'],
-                false,
-                $queueDurable,
-                $queueExclusive,
-                $queueAutoDelete
-            );
+            $channel = $this->connectionFactory->getChannel($this->connectionName);
+
+            $queue = new \AMQPQueue($channel);
+            $queue->setName($consumer->queue['name']);
+            $queue->setFlags(AMQP_DURABLE | AMQP_EXCLUSIVE | AMQP_AUTODELETE | AMQP_PASSIVE);
+            $queue->setArgument(AMQP_DURABLE, $queueDurable);
+            $queue->setArgument(AMQP_EXCLUSIVE, $queueExclusive);
+            $queue->setArgument(AMQP_AUTODELETE, $queueAutoDelete);
+            $queue->setArgument(AMQP_PASSIVE, false);
+            $queue->
+            $queue->declareQueue();
 
             if ($consumer->exchange !== null) {
-
                 if (isset($consumer->exchange['durable'])) {
                     $exchangeDurable = $consumer->exchange['durable'];
                 } else {
@@ -120,43 +117,54 @@ class Consumer
                     $exchangeAutoDelete = false;
                 }
 
-                $channel->exchange_declare(
-                    $consumer->exchange['name'],
-                    $consumer->exchange['type'],
-                    false, $exchangeDurable, $exchangeAutoDelete);
+                $exchangeName = $consumer->exchange['name'];
 
-                $channel->queue_bind($queueName, $consumer->exchange['name']);
+                $exchange = $this->connectionFactory->getExchange($this->connectionName, null, $exchangeName);
+                $exchange->setFlags(AMQP_DURABLE | AMQP_AUTODELETE | AMQP_PASSIVE);
+                $exchange->setArgument(AMQP_DURABLE, $exchangeDurable);
+                $exchange->setArgument(AMQP_AUTODELETE, $exchangeAutoDelete);
+                $exchange->setArgument(AMQP_PASSIVE, false);
+                $exchange->setType($consumer->exchange['type']);
+                $exchange->declareExchange();
+
+                $exchange->bind($exchangeName);
+                $queue->bind($exchangeName);
             }
 
-            $channel->basic_qos(null, 1, null);
+            $channel = $this->connectionFactory->getChannel($this->connectionName);
+
+            $channel->setPrefetchCount(1);
 
             $closure = $method->getClosure($this->consumer);
-            $callback = function (AMQPMessage $msg) use ($closure) {
-                $id = $msg->get('exchange') . '_' . $msg->get('routing_key');
+            $callback = function (\AMQPEnvelope $msg) use ($closure, $queue) {
+                $id = $msg->getExchangeName() . '_' . $msg->getRoutingKey();
                 /** @var Consumer $annotation */
                 list($taskClass, $annotation) = $this->taskClasses[$id];
 
                 if ($taskClass !== false) {
                     /** @var MessageInterface $task */
                     $task = new $taskClass();
-                    $task->fromString($msg->body);
+                    $task->fromString($msg->getBody());
                     $result = $closure($task);
                 } else {
                     $result = $closure();
                 }
 
                 if ($annotation->ack && $result) {
-                    $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
+                    $queue->nack($msg->getDeliveryTag());
                 }
             };
-            $channel->basic_consume($queueName, '', false, !$consumer->ack, false, false, $callback);
+
+            $queue->consume($callback);
+            //$channel->basic_consume($queueName, '', false, !$consumer->ack, false, false, $callback);
         }
 
-        while (count($channel->callbacks)) {
-            $channel->wait();
-        }
-        $channel->close();
-        $connection->close();
+        //$connnection = $this->connectionFactory->getConnection($this->connectionName);
+        //while ($) {
+        //    $connnection->;
+        //}
+        //$channel->close();
+        //$connection->close();
     }
 
 }
