@@ -8,14 +8,14 @@ abstract class AbstractMessage implements MessageInterface
 
     protected $exchange;
 
-    protected $queue;
+    protected $routingKey;
 
     protected $data;
 
-    public function __construct($exchange, $queue)
+    public function __construct($exchange, $routingKey = null)
     {
         $this->exchange = $exchange;
-        $this->queue = $queue;
+        $this->routingKey = $routingKey;
     }
 
     /**
@@ -29,9 +29,9 @@ abstract class AbstractMessage implements MessageInterface
     /**
      * @return string
      */
-    public function getQueue()
+    public function getRoutingKey()
     {
-        return $this->queue;
+        return $this->routingKey;
     }
 
     /**

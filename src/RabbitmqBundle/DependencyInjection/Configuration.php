@@ -1,9 +1,8 @@
 <?php
-
 namespace IvixLabs\RabbitmqBundle\DependencyInjection;
 
-use Symfony\IvixLabs\Config\Definition\Builder\TreeBuilder;
-use Symfony\IvixLabs\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
@@ -17,16 +16,43 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-            ->arrayNode('connections')
-                ->prototype('array')
-                    ->children()
-                        ->scalarNode('host')->end()
-                        ->scalarNode('port')->end()
-                        ->scalarNode('user')->end()
-                        ->scalarNode('password')->end()
+                ->arrayNode('channels')
+                    ->prototype('array')
+                        ->children()
+                        ->end()
                     ->end()
                 ->end()
-            ->end()
+                ->arrayNode('queues')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('name')->isRequired()->end()
+                            ->booleanNode('durable')->defaultTrue()->end()
+                            ->booleanNode('exclusive')->defaultFalse()->end()
+                            ->booleanNode('autoDelete')->defaultTrue()->end()
+                            ->booleanNode('passive')->defaultFalse()->end()
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('exchanges')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('name')->defaultValue('amq.default')->end()
+                            ->scalarNode('type')->defaultValue('direct')->end()
+                            ->booleanNode('durable')->defaultTrue()->end()
+                            ->booleanNode('passive')->defaultFalse()->end()
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('connections')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('host')->isRequired()->end()
+                            ->scalarNode('port')->isRequired()->end()
+                            ->scalarNode('user')->isRequired()->end()
+                            ->scalarNode('password')->isRequired()->end()
+                        ->end()
+                    ->end()
+                ->end()
             ->end();
 
         return $treeBuilder;

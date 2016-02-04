@@ -14,7 +14,7 @@ interface MessageInterface
     /**
      * @return string
      */
-    public function getQueue();
+    public function getRoutingKey();
 
     /**
      * @param $string

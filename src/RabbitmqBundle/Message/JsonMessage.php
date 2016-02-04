@@ -19,6 +19,4 @@ class JsonMessage extends AbstractMessage
     {
         return json_encode((string)$this->data);
     }
-
-
 }

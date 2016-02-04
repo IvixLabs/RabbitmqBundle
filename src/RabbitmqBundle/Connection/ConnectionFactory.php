@@ -4,119 +4,87 @@ namespace IvixLabs\RabbitmqBundle\Connection;
 class ConnectionFactory
 {
 
-    private $connectionSettings = [];
+    private $settings;
 
     /**
-     * @var \AMQPConnection[]
+     * @var ConnectionStorage[]
      */
-    private $connections = [];
-
-    /**
-     * @var \SplObjectStorage
-     */
-    private $channels;
+    private $connectionStorages = [];
 
     /**
      * @var \SplObjectStorage
      */
-    private $exchanges;
+    private $connections;
 
     /**
      * ConnectionFactory constructor.
+     * @param array $settings
      */
-    public function __construct()
+    public function __construct(array $settings)
     {
-        $this->channels = new \SplObjectStorage();
-        $this->exchanges = new \SplObjectStorage();
-    }
-
-    public function addConnectionSettings($name, $settings)
-    {
-        $this->connectionSettings[$name] = $settings;
+        $this->settings = $settings;
+        $this->connections = new \SplObjectStorage();
     }
 
     /**
      * @param $name
-     * @return \AMQPConnection
+     * @return ConnectionStorage
      */
-    public function getConnection($name)
+    public function getConnectionStorage($name = 'default')
     {
-        if (!isset($this->connections[$name])) {
-            if (!isset($this->connectionSettings[$name])) {
+        if (!isset($this->connectionStorages[$name])) {
+            if (!isset($this->settings['connections'][$name])) {
                 throw new \LogicException('No settings for connection ' . $name);
             }
-            $settings = $this->connectionSettings[$name];
 
-            $connection = new \AMQPConnection();
-            $connection->setHost($settings['host']);
-            $connection->setPort($settings['port']);
-            $connection->setLogin($settings['user']);
-            $connection->setPassword($settings['password']);
-
-            $this->connections[$name] = $connection;
-
+            $this->connectionStorages[$name] =
+                new ConnectionStorage(
+                    $name,
+                    $this->settings['connections'][$name],
+                    $this->settings['channels'],
+                    $this->settings['exchanges'],
+                    $this->settings['queues']
+                );
         }
 
-        return $this->connections[$name];
+        return $this->connectionStorages[$name];
     }
 
     /**
-     * @param $connectionName
-     * @param string $channelName
-     * @return \AMQPChannel
+     * @param \AMQPConnection $connection
+     * @return ConnectionStorage
      */
-    public function getChannel($connectionName, $channelName = 'default')
+    public function getConnectionStorageByConnection(\AMQPConnection $connection)
     {
-        $connection = $this->getConnection($connectionName);
-        if (!isset($this->channels[$connection])) {
-            $this->channels[$connection] = [];
-        }
-
-        $channels = $this->channels[$connection];
-        if (!isset($channels[$channelName])) {
-            $channel = new \AMQPChannel($connection);
-            $channels[$channelName] = $channel;
-        }
-
-        return $channels[$channelName];
-    }
-
-    /**
-     * @param $connectionName
-     * @param string $channelName
-     * @param string $exchangeName
-     * @return \AMQPExchange
-     */
-    public function getExchange($connectionName, $channelName = null, $exchangeName = 'default')
-    {
-        if($channelName === null) {
-            $channelRealName = 'default';
-        } else {
-            $channelRealName = $channelName;
-        }
-
-        $channel = $this->getChannel($connectionName, $channelRealName);
-        if(!isset($this->exchanges[$channel])) {
-            $this->exchanges[$channel] = [];
-        }
-
-        $exchanges = $this->exchanges[$channel];
-        if(!isset($exchanges[$exchangeName])) {
-            $exchange = new \AMQPExchange($channel);
-
-            $exchanges[$exchangeName] = $exchange;
-        }
-
-        return $exchanges[$exchangeName];
-    }
-
-    function __destruct()
-    {
-        foreach ($this->connections as $conn) {
-            foreach ($conn->channels as $channel) {
-                $channel->close();
+        if (!isset($this->connections[$connection])) {
+            $found = false;
+            foreach ($this->connectionStorages as $connectionStorage) {
+                if ($connectionStorage->getConnection() === $connection) {
+                    $this->connections[$connection] = $connectionStorage;
+                    $found = true;
+                    break;
+                }
             }
-            $conn->close();
+            if (!$found) {
+                throw new \LogicException('ConnectionStorage not found');
+            }
         }
+
+        return $this->connections[$connection];
+    }
+
+    /**
+     * @return \AMQPQueue[]
+     */
+    public function getAllQueues()
+    {
+        $queues = [];
+        foreach ($this->connectionStorages as $connectionStorage) {
+            foreach ($connectionStorage->getAllQueues() as $queue) {
+                $queues[] = $queue;
+            }
+        }
+
+        return $queues;
     }
 }

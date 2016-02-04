@@ -2,7 +2,7 @@
 namespace IvixLabs\RabbitmqBundle\Command;
 
 use IvixLabs\RabbitmqBundle\Client\Consumer;
-use IvixLabs\RabbitmqBundle\Client\ConsumerManager;
+use IvixLabs\RabbitmqBundle\Client\ConsumerWorkerManager;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,9 +13,9 @@ class ConsumerCommand extends Command
 {
 
     /**
-     * @var ConsumerManager
+     * @var ConsumerWorkerManager
      */
-    private $consumerManager;
+    private $consumerWorkerManager;
 
     /**
      * @var ConnectionFactory
@@ -24,23 +24,23 @@ class ConsumerCommand extends Command
 
     protected function configure()
     {
-        $this->setName('ivixlabs:rabbitmq:consumer')
-            ->setDescription('Launch consumer')
+        $this->setName('ivixlabs:rabbitmq:consumer_worker')
+            ->setDescription('Launch consumer worker')
             ->addArgument('name', InputArgument::REQUIRED);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $name = $input->getArgument('name');
-        $consumer = $this->consumerManager->getConsumer($name);
+        $consumerWorker = $this->consumerWorkerManager->getConsumerWorker($name);
 
-        $launcher = new Consumer($consumer, $this->connectionFactory);
+        $launcher = new Consumer($consumerWorker, $this->connectionFactory);
         $launcher->execute();
     }
 
-    public function setConsumerManager(ConsumerManager $consumerManager)
+    public function setConsumerWorkerManager(ConsumerWorkerManager $consumerWorkerManager)
     {
-        $this->consumerManager = $consumerManager;
+        $this->consumerWorkerManager = $consumerWorkerManager;
     }
 
     public function setConnectionFactory(ConnectionFactory $connectionFactory)

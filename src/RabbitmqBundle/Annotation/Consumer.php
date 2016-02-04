@@ -8,18 +8,24 @@ namespace IvixLabs\RabbitmqBundle\Annotation;
 class Consumer
 {
     /**
-     * @var array
+     * @var string
      */
-    public $exchange;
-
-
-    /**
-     * @var array
-     */
-    public $queue;
+    public $queueName = 'default';
 
     /**
-     * @var bool
+     * @var string
      */
-    public $ack = true;
+    public $exchangeName = 'default';
+
+    /**
+     * @var string
+     */
+    public $channelName = 'default';
+
+    /**
+     * @var string
+     */
+    public $connectionName = 'default';
+
+
 }

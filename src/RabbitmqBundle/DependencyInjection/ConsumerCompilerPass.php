@@ -12,7 +12,7 @@ class ConsumerCompilerPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container)
     {
-        $serviceId = 'ivixlabs.rabbitmq.manager.consumer';
+        $serviceId = 'ivixlabs.rabbitmq.manager.consumer_worker';
 
 
         if (!$container->hasDefinition($serviceId)) {
@@ -21,15 +21,18 @@ class ConsumerCompilerPass implements CompilerPassInterface
 
         $definition = $container->getDefinition($serviceId);
 
-        $tag = 'ivixlabs.rabbitmq.worker';
+        $tag = 'ivixlabs.rabbitmq.consumer_worker';
 
         $services = $container->findTaggedServiceIds($tag);
         foreach ($services as $id => $tagAttributes) {
             foreach ($tagAttributes as $attributes) {
-                $definition->addMethodCall('addConsumerService', array(new Reference($id), $id));
+                if (isset($attributes['consumer_worker_name'])) {
+                    $name = $attributes['consumer_worker_name'];
+                } else {
+                    $name = $id;
+                }
+                $definition->addMethodCall('addConsumerWorker', array(new Reference($id), $name));
             }
         }
     }
-
-
 }

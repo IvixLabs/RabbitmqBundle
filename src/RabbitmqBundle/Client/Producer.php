@@ -12,6 +12,10 @@ class Producer
      */
     private $connectionName;
 
+    /**
+     * @var string
+     */
+    private $channelName;
 
     /**
      * @var ConnectionFactory
@@ -25,29 +29,33 @@ class Producer
 
     /**
      * Producer constructor.
-     * @param string $connectionName
+     * @param $connectionName
+     * @param $channelName
      * @param ConnectionFactory $connectionFactory
      */
-    public function __construct($connectionName, ConnectionFactory $connectionFactory)
+    public function __construct($connectionName, $channelName, ConnectionFactory $connectionFactory)
     {
         $this->connectionName = $connectionName;
+        $this->channelName = $channelName;
         $this->connectionFactory = $connectionFactory;
     }
 
     public function publish(MessageInterface $message)
     {
-        $exchange= $this->getExchange($message->getExchange());
-        $exchange->publish($message->toString(), $message->getQueue());
+        $exchange = $this->getExchange($message->getExchange());
+        $exchange->publish($message->toString(), $message->getRoutingKey());
     }
 
     /**
-     * @param $name
+     * @param $realName
      * @return \AMQPExchange
      */
-    private function getExchange($name)
+    private function getExchange($realName)
     {
         if ($this->exchange === null) {
-            $this->exchange = $this->connectionFactory->getExchange($this->connectionName, null, $name);
+            $connectionStorage = $this->connectionFactory->getConnectionStorage($this->connectionName);
+            $name = $connectionStorage->getExchangeName($realName);
+            $this->exchange = $connectionStorage->getExchange($name, $this->channelName);
         }
 
         return $this->exchange;

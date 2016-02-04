@@ -22,15 +22,15 @@ class IvixLabsRabbitmqExtension extends Extension
         $loader->load('services.xml');
 
         $connectionFactoryDefinition = $container->getDefinition('ivixlabs.rabbitmq.factory.connection');
-
+        $connectionFactoryDefinition->addArgument($config);
         $producers = [];
         foreach ($config['connections'] as $connectionName => $settings) {
-            $connectionFactoryDefinition->addMethodCall('addConnectionSettings', array($connectionName, $settings));
 
-            $definition = new Definition(Producer::class, [$connectionName, $connectionFactoryDefinition]);
-            $id = 'ivixlabs.rabbitmq.producer.' . $connectionName;
-            $producers[$id] = $definition;
-
+            foreach ($config['channels'] as $channelName => $channelSettings) {
+                $definition = new Definition(Producer::class, [$connectionName, $channelName, $connectionFactoryDefinition]);
+                $id = 'ivixlabs.rabbitmq.producer.' . $connectionName . '.' . $channelName;
+                $producers[$id] = $definition;
+            }
         }
         $container->addDefinitions($producers);
 
