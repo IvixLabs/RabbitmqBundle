@@ -27,5 +27,8 @@ class Consumer
      */
     public $connectionName = 'default';
 
-
+    /**
+     * @var string
+     */
+    public $routingKey = null;
 }

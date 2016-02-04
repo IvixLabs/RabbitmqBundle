@@ -43,7 +43,7 @@ class Consumer
     private function getTaskClassKey(Annotation\Consumer $annotation)
     {
         return $annotation->connectionName . '_' . $annotation->channelName . '_'
-        . $annotation->exchangeName . '_' . $annotation->queueName;
+        . $annotation->exchangeName . '_' . $annotation->queueName . '_' . $annotation->routingKey;
     }
 
     public function execute()
@@ -58,8 +58,7 @@ class Consumer
             $queue = $connectionStorage->getQueue($annotation->queueName);
             $exchange = $connectionStorage->getExchange($annotation->exchangeName);
 
-            $queue->bind($exchange->getName());
-
+            $queue->bind($exchange->getName(), $annotation->routingKey);
         }
 
         $callback = function (\AMQPEnvelope $msg, \AMQPQueue $queue) {
@@ -76,7 +75,8 @@ class Consumer
             $queueName = $connectionStorage->getQueueName($queue->getName());
 
 
-            $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' . $queueName;
+            $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' .
+                $queueName . '_' . $msg->getRoutingKey();
             /** @var \Closure $method */
             list($taskClass, $method) = $this->taskClasses[$id];
 
