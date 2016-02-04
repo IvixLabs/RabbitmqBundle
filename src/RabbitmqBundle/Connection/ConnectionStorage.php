@@ -135,7 +135,10 @@ class ConnectionStorage
 
             $settings = $this->queuesSettings[$name];
             $queue = new \AMQPQueue($channel);
-            $queue->setName($settings['name']);
+
+            if($settings['name'] !== null) {
+                $queue->setName($settings['name']);
+            }
 
             $queueFlags = AMQP_NOPARAM;
             if ($settings['durable']) {
@@ -154,6 +157,7 @@ class ConnectionStorage
             $queue->setFlags($queueFlags);
             $queue->declareQueue();
 
+            $this->queuesSettings[$name]['name'] = $queue->getName();
             $this->queues[$key] = $queue;
         }
 
