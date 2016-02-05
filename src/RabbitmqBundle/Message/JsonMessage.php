@@ -1,22 +1,33 @@
 <?php
 namespace IvixLabs\RabbitmqBundle\Message;
 
+use IvixLabs\Common\Object\AbstractJsonObject;
 
-class JsonMessage extends AbstractMessage
+abstract class JsonMessage extends AbstractJsonObject implements MessageInterface
 {
-    /**
-     * @param $string
-     */
-    public function fromString($string)
+    protected $exchange;
+
+    protected $routingKey;
+
+    public function __construct($exchange, $routingKey = null)
     {
-        $this->data = (json_decode($string));
+        $this->exchange = $exchange;
+        $this->routingKey = $routingKey;
     }
 
     /**
      * @return string
      */
-    public function toString()
+    public function getExchange()
     {
-        return json_encode((string)$this->data);
+        return $this->exchange;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRoutingKey()
+    {
+        return $this->routingKey;
     }
 }
