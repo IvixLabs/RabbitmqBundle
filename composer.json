@@ -21,7 +21,6 @@
     "symfony/config": ">=2.6.0",
     "symfony/http-kernel": ">=2.6.0",
     "doctrine/common" : "~2.6",
-    "videlalvaro/php-amqplib": "~2.6",
     "ivixlabs/common": "dev-master"
   },
   "autoload": {
