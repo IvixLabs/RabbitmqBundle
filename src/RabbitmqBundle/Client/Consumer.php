@@ -27,14 +27,23 @@ class Consumer
         foreach ($methods as $method) {
             $methodAnnotations = $reader->getMethodAnnotations($method);
             $parameters = $method->getParameters();
-            $taskClass = false;
+            $taskClassName = false;
             if (!empty($parameters)) {
-                $taskClass = $parameters[0]->getClass()->getName();
+                $taskClass = $parameters[0]->getClass();
+                $isMessage = $taskClass->implementsInterface('IvixLabs\RabbitmqBundle\Message\MessageInterface');
+                if (!$isMessage) {
+                    throw new \InvalidArgumentException('Task must implmenet IvixLabs\RabbitmqBundle\Message\MessageInterface');
+                }
+                $taskClassName = $taskClass->getName();
             }
             foreach ($methodAnnotations AS $annotation) {
                 if ($annotation instanceof Annotation\Consumer) {
                     $key = $this->getTaskClassKey($annotation);
-                    $this->taskClasses[$key] = [$taskClass, $method->getClosure($consumerWorker), $annotation];
+                    $this->taskClasses[$key] = [
+                        $taskClassName,
+                        $method->getClosure($consumerWorker),
+                        $annotation
+                    ];
                 }
             }
         }
@@ -78,12 +87,11 @@ class Consumer
             $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' .
                 $queueName . '_' . $msg->getRoutingKey();
             /** @var \Closure $method */
+            /** @var MessageInterface $taskClass */
             list($taskClass, $method) = $this->taskClasses[$id];
 
             if ($taskClass !== false) {
-                /** @var MessageInterface $task */
-                $task = new $taskClass();
-                $task->fromString($msg->getBody());
+                $task = $taskClass::createFromString($msg->getBody());
                 $result = $method($task);
             } else {
                 $result = $method();

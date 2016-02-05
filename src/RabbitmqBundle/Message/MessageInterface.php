@@ -1,9 +1,9 @@
 <?php
-
 namespace IvixLabs\RabbitmqBundle\Message;
 
+use IvixLabs\Common\Object\StringableInterface;
 
-interface MessageInterface
+interface MessageInterface extends StringableInterface
 {
 
     /**
@@ -15,14 +15,4 @@ interface MessageInterface
      * @return string
      */
     public function getRoutingKey();
-
-    /**
-     * @param $string
-     */
-    public function fromString($string);
-
-    /**
-     * @return string
-     */
-    public function toString();
 }
