@@ -3,7 +3,7 @@ namespace IvixLabs\RabbitmqBundle\Message;
 
 use IvixLabs\Common\Object\AbstractJsonObject;
 
-abstract class JsonMessage extends AbstractJsonObject implements MessageInterface
+abstract class AbstractJsonMessage extends AbstractJsonObject implements MessageInterface
 {
     protected $exchange;
 
