@@ -108,9 +108,9 @@ class Consumer
                 $consumers = array_merge($consumers, $this->taskClasses[$key]);
             }
 
-            $key = $connectionName . '_' . $channelName . '_' . $exchangeName . '_';
-            if (isset($this->taskClasses[$key])) {
-                $consumers = array_merge($consumers, $this->taskClasses[$key]);
+            $keyNull = $connectionName . '_' . $channelName . '_' . $exchangeName . '_';
+            if ($keyNull !== $key && isset($this->taskClasses[$keyNull])) {
+                $consumers = array_merge($consumers, $this->taskClasses[$keyNull]);
             }
 
             if (empty($consumers)) {
