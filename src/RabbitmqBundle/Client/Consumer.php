@@ -105,7 +105,7 @@ class Consumer
                     $queueName . '_';
             }
 
-            if (isset($this->taskClasses[$id])) {
+            if (!isset($this->taskClasses[$id])) {
                 $msg = 'Consumer not found: ';
                 $msg .= implode(', ', [
                     'connection=' . $connectionName,
