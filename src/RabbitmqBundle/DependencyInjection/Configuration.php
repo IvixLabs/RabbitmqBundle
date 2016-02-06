@@ -41,8 +41,10 @@ class Configuration implements ConfigurationInterface
                             ->booleanNode('durable')->defaultTrue()->end()
                             ->booleanNode('passive')->defaultFalse()->end()
                             ->booleanNode('autoDelete')->defaultTrue()->end()
-                            ->arrayNode('bind_exchanges')
-                                ->prototype('array')->end()
+                            ->arrayNode('bind_exchanges')->useAttributeAsKey('name')
+                                ->prototype('array')->
+                                    prototype('scalar')->end()
+                                ->end()
                             ->end()
                         ->end()
                     ->end()
