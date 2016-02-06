@@ -136,7 +136,7 @@ class ConnectionStorage
             $settings = $this->queuesSettings[$name];
             $queue = new \AMQPQueue($channel);
 
-            if($settings['name'] !== null) {
+            if ($settings['name'] !== null) {
                 $queue->setName($settings['name']);
             }
 
@@ -217,6 +217,17 @@ class ConnectionStorage
             }
 
             $this->exchanges[$key] = $exchange;
+
+            //Warning place possible circular links
+            if ($settings['bind_exchanges'] !== null) {
+                foreach ($settings['bind_exchanges'] as $binExchangeName => $routingKeys) {
+                    $bindExchange = $this->getExchange($binExchangeName, $channelName);
+                    foreach ($routingKeys as $routingKey) {
+                        $exchange->bind($bindExchange->getName(), $routingKey);
+                    }
+                }
+            }
+
         }
 
         return $this->exchanges[$key];

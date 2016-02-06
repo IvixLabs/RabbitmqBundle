@@ -41,6 +41,7 @@ class Configuration implements ConfigurationInterface
                             ->booleanNode('durable')->defaultTrue()->end()
                             ->booleanNode('passive')->defaultFalse()->end()
                             ->booleanNode('autoDelete')->defaultTrue()->end()
+                            ->arrayNode('bind_exchanges')->defaultNull()->end()
                         ->end()
                     ->end()
                 ->end()
