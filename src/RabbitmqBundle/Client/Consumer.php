@@ -2,6 +2,7 @@
 namespace IvixLabs\RabbitmqBundle\Client;
 
 use IvixLabs\RabbitmqBundle\Annotation;
+use IvixLabs\RabbitmqBundle\Command\RejectMessageException;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -40,19 +41,16 @@ class Consumer
                         $taskClassName = $taskClass->getName();
                     }
 
-                    $key = $this->getTaskClassKey($annotation);
-                    if (isset($this->taskClasses[$key])) {
-                        $msg = 'Consumer like it already registered: ';
-                        $msg .= implode(', ', [
-                            'connection=' . $annotation->connectionName,
-                            'channel=' . $annotation->channelName,
-                            'exchange=' . $annotation->exchangeName,
-                            'queue=' . $annotation->queueName,
-                            'routingKey=' . $annotation->routingKey
-                        ]);
-                        throw new \LogicException($msg);
+                    $key =
+                        $annotation->connectionName . '_' .
+                        $annotation->channelName . '_' .
+                        $annotation->exchangeName . '_' .
+                        $annotation->routingKey;
+
+                    if (!isset($this->taskClasses[$key])) {
+                        $this->taskClasses[$key] = [];
                     }
-                    $this->taskClasses[$key] = [
+                    $this->taskClasses[$key][] = [
                         $taskClassName,
                         $method->getClosure($consumerWorker),
                         $annotation
@@ -60,12 +58,6 @@ class Consumer
                 }
             }
         }
-    }
-
-    private function getTaskClassKey(Annotation\Consumer $annotation)
-    {
-        return $annotation->connectionName . '_' . $annotation->channelName . '_'
-        . $annotation->exchangeName . '_' . $annotation->queueName . '_' . $annotation->routingKey;
     }
 
     public function execute()
@@ -83,62 +75,78 @@ class Consumer
             $queue->bind($exchange->getName(), $annotation->routingKey);
         }
 
-        $callback = function (\AMQPEnvelope $msg, \AMQPQueue $queue) {
+        $queues = $this->connectionFactory->getAllQueues();
 
-            $connection = $queue->getConnection();
+        /** @var \AMQPQueue $mainQueue */
+        $mainQueue = array_pop($queues);
+        foreach ($queues as $queue) {
+            $queue->consume();
+        }
+
+        $callback = function (\AMQPEnvelope $msg) use ($mainQueue) {
+
+            $connection = $mainQueue->getConnection();
             $connectionStorage = $this->connectionFactory->getConnectionStorageByConnection($connection);
 
             $connectionName = $connectionStorage->getConnectionName();
 
-            $channel = $queue->getChannel();
+            $channel = $mainQueue->getChannel();
             $channelName = $connectionStorage->getChannelName($channel);
 
             $exchangeName = $connectionStorage->getExchangeName($msg->getExchangeName());
-            $queueName = $connectionStorage->getQueueName($queue->getName());
 
             $routingKey = $msg->getRoutingKey();
 
-            $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' .
-                $queueName . '_' . $routingKey;
-            if (!isset($this->taskClasses[$id])) {
-                $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' .
-                    $queueName . '_';
+            $consumers = [];
+            $key =
+                $connectionName . '_' .
+                $channelName . '_' .
+                $exchangeName . '_' .
+                $routingKey;
+            if (isset($this->taskClasses[$key])) {
+                $consumers += $this->taskClasses[$key];
             }
 
-            if (!isset($this->taskClasses[$id])) {
+            $key = $connectionName . '_' . $channelName . '_' . $exchangeName . '_';
+            if (isset($this->taskClasses[$key])) {
+                $consumers += $this->taskClasses[$key];
+            }
+
+            if (empty($consumers)) {
                 $msg = 'Consumer not found: ';
                 $msg .= implode(', ', [
                     'connection=' . $connectionName,
                     'channel=' . $channelName,
                     'exchange=' . $exchangeName,
-                    'queue=' . $queueName,
                     'routingKey=' . $routingKey
                 ]);
                 throw new \LogicException($msg);
             }
 
-            /** @var \Closure $method */
-            /** @var MessageInterface $taskClass */
-            list($taskClass, $method) = $this->taskClasses[$id];
+            $isAsk = true;
+            foreach ($consumers as list($taskClass, $method)) {
+                /** @var \Closure $method */
+                /** @var MessageInterface $taskClass */
 
-            if ($taskClass !== false) {
-                $task = $taskClass::createFromString($msg->getBody());
-                $result = $method($task);
-            } else {
-                $result = $method();
+                try {
+                    if ($taskClass !== false) {
+                        $task = $taskClass::createFromString($msg->getBody());
+                        $method($task);
+                    } else {
+                        $method();
+                    }
+                } catch (RejectMessageException $e) {
+                    $mainQueue->nack($msg->getDeliveryTag());
+                    $isAsk = false;
+                    break;
+                }
+
             }
 
-            if ($result) {
-                $queue->ack($msg->getDeliveryTag());
+            if ($isAsk) {
+                $mainQueue->ack($msg->getDeliveryTag());
             }
         };
-
-        $queues = $this->connectionFactory->getAllQueues();
-
-        $mainQueue = array_pop($queues);
-        foreach ($queues as $queue) {
-            $queue->consume();
-        }
 
         $mainQueue->consume($callback);
     }

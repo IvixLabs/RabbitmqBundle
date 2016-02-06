@@ -159,6 +159,16 @@ class ConnectionStorage
 
             $this->queuesSettings[$name]['name'] = $queue->getName();
             $this->queues[$key] = $queue;
+
+            //Warning place possible circular links
+            if ($settings['bind_exchanges'] !== null) {
+                foreach ($settings['bind_exchanges'] as $binExchangeName => $routingKeys) {
+                    $bindExchange = $this->getExchange($binExchangeName, $channelName);
+                    foreach ($routingKeys as $routingKey) {
+                        $queue->bind($bindExchange->getName(), $routingKey);
+                    }
+                }
+            }
         }
 
         return $this->queues[$key];
