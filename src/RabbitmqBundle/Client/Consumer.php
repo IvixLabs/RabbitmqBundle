@@ -105,12 +105,12 @@ class Consumer
                 $exchangeName . '_' .
                 $routingKey;
             if (isset($this->taskClasses[$key])) {
-                $consumers += $this->taskClasses[$key];
+                $consumers = array_merge($consumers, $this->taskClasses[$key]);
             }
 
             $key = $connectionName . '_' . $channelName . '_' . $exchangeName . '_';
             if (isset($this->taskClasses[$key])) {
-                $consumers += $this->taskClasses[$key];
+                $consumers = array_merge($consumers, $this->taskClasses[$key]);
             }
 
             if (empty($consumers)) {
