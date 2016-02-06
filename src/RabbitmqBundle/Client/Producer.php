@@ -24,11 +24,6 @@ class Producer
     private $connectionFactory;
 
     /**
-     * @var \AMQPExchange
-     */
-    private $exchange;
-
-    /**
      * Producer constructor.
      * @param $connectionName
      * @param $channelName
@@ -43,22 +38,8 @@ class Producer
 
     public function publish(MessageInterface $message)
     {
-        $exchange = $this->getExchange($message->getExchangeName());
-        $wrapper = new MessageWrapper($message);
-        $exchange->publish($wrapper->toString(), $message->getRoutingKey());
-    }
-
-    /**
-     * @param $name
-     * @return \AMQPExchange
-     */
-    private function getExchange($name)
-    {
-        if ($this->exchange === null) {
-            $connectionStorage = $this->connectionFactory->getConnectionStorage($this->connectionName);
-            $this->exchange = $connectionStorage->getExchange($name, $this->channelName);
-        }
-
-        return $this->exchange;
+        $connectionStorage = $this->connectionFactory->getConnectionStorage($this->connectionName);
+        $exchange = $connectionStorage->getExchange($message->getExchangeName(), $this->channelName);
+        $exchange->publish($message->toString(), $message->getRoutingKey());
     }
 }

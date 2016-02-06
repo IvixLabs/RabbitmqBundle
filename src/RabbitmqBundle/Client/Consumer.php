@@ -7,7 +7,6 @@ use IvixLabs\RabbitmqBundle\Exception\RejectMessageException;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
-use IvixLabs\RabbitmqBundle\Message\MessageWrapper;
 
 class Consumer
 {
@@ -88,7 +87,6 @@ class Consumer
         $callback = function (\AMQPEnvelope $msg) use ($mainQueue) {
 
             $deliveryTag = $msg->getDeliveryTag();
-            $messageWrapper = MessageWrapper::createFromString($msg->getBody());
 
             $connection = $mainQueue->getConnection();
             $connectionStorage = $this->connectionFactory->getConnectionStorageByConnection($connection);
@@ -98,8 +96,8 @@ class Consumer
             $channel = $mainQueue->getChannel();
             $channelName = $connectionStorage->getChannelName($channel);
 
-            $exchangeName = $messageWrapper->getExchangeName();
-            $routingKey = $messageWrapper->getRoutingKey();
+            $exchangeName = $msg->getExchangeName();
+            $routingKey = $msg->getRoutingKey();
 
             $consumers = [];
             $key =
@@ -135,7 +133,7 @@ class Consumer
 
                 try {
                     if ($taskClass !== false) {
-                        $task = $taskClass::createFromString($messageWrapper->getObjectString());
+                        $task = $taskClass::createFromString($msg->getBody());
                         $method($task);
                     } else {
                         $method();
