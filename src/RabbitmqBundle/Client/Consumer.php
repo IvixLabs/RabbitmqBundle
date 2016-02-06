@@ -7,6 +7,7 @@ use IvixLabs\RabbitmqBundle\Exception\RejectMessageException;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
+use IvixLabs\RabbitmqBundle\Message\MessageWrapper;
 
 class Consumer
 {
@@ -86,6 +87,9 @@ class Consumer
 
         $callback = function (\AMQPEnvelope $msg) use ($mainQueue) {
 
+            $deliveryTag = $msg->getDeliveryTag();
+            $messageWrapper = MessageWrapper::createFromString($msg->getBody());
+
             $connection = $mainQueue->getConnection();
             $connectionStorage = $this->connectionFactory->getConnectionStorageByConnection($connection);
 
@@ -94,9 +98,8 @@ class Consumer
             $channel = $mainQueue->getChannel();
             $channelName = $connectionStorage->getChannelName($channel);
 
-            $exchangeName = $connectionStorage->getExchangeName($msg->getExchangeName());
-
-            $routingKey = $msg->getRoutingKey();
+            $exchangeName = $messageWrapper->getExchangeName();
+            $routingKey = $messageWrapper->getRoutingKey();
 
             $consumers = [];
             $key =
@@ -114,14 +117,14 @@ class Consumer
             }
 
             if (empty($consumers)) {
-                $msg = 'Consumer not found: ';
-                $msg .= implode(', ', [
+                $exceptionMessage = 'Consumer not found: ';
+                $exceptionMessage .= implode(', ', [
                     'connection=' . $connectionName,
                     'channel=' . $channelName,
                     'exchange=' . $exchangeName,
                     'routingKey=' . $routingKey
                 ]);
-                throw new \LogicException($msg);
+                throw new \LogicException($exceptionMessage);
             }
 
             $isAsk = true;
@@ -132,23 +135,22 @@ class Consumer
 
                 try {
                     if ($taskClass !== false) {
-                        $task = $taskClass::createFromString($msg->getBody());
+                        $task = $taskClass::createFromString($messageWrapper->getObjectString());
                         $method($task);
                     } else {
                         $method();
                     }
                 } catch (RejectMessageException $e) {
-                    $mainQueue->nack($msg->getDeliveryTag());
+                    $mainQueue->nack($deliveryTag);
                     $isAsk = false;
                     break;
                 } catch (ExitConsumerWorkerException $e) {
                     $isContinue = false;
                 }
-
             }
 
             if ($isAsk) {
-                $mainQueue->ack($msg->getDeliveryTag());
+                $mainQueue->ack($deliveryTag);
             }
 
             return $isContinue;

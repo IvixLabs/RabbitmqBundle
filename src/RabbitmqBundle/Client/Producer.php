@@ -3,6 +3,7 @@ namespace IvixLabs\RabbitmqBundle\Client;
 
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
+use IvixLabs\RabbitmqBundle\Message\MessageWrapper;
 
 class Producer
 {
@@ -43,7 +44,8 @@ class Producer
     public function publish(MessageInterface $message)
     {
         $exchange = $this->getExchange($message->getExchangeName());
-        $exchange->publish($message->toString(), $message->getRoutingKey());
+        $wrapper = new MessageWrapper($message);
+        $exchange->publish($wrapper->toString(), $message->getRoutingKey());
     }
 
     /**
