@@ -9,7 +9,7 @@ interface MessageInterface extends StringableInterface
     /**
      * @return string
      */
-    public function getExchange();
+    public function getExchangeName();
 
     /**
      * @return string

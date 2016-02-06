@@ -42,19 +42,18 @@ class Producer
 
     public function publish(MessageInterface $message)
     {
-        $exchange = $this->getExchange($message->getExchange());
+        $exchange = $this->getExchange($message->getExchangeName());
         $exchange->publish($message->toString(), $message->getRoutingKey());
     }
 
     /**
-     * @param $realName
+     * @param $name
      * @return \AMQPExchange
      */
-    private function getExchange($realName)
+    private function getExchange($name)
     {
         if ($this->exchange === null) {
             $connectionStorage = $this->connectionFactory->getConnectionStorage($this->connectionName);
-            $name = $connectionStorage->getExchangeName($realName);
             $this->exchange = $connectionStorage->getExchange($name, $this->channelName);
         }
 

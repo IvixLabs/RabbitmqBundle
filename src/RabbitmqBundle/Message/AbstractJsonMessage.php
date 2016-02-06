@@ -5,22 +5,22 @@ use IvixLabs\Common\Object\AbstractJsonObject;
 
 abstract class AbstractJsonMessage extends AbstractJsonObject implements MessageInterface
 {
-    protected $exchange;
+    protected $exchangeName;
 
     protected $routingKey;
 
-    public function __construct($exchange, $routingKey = null)
+    public function __construct($exchangeName, $routingKey = null)
     {
-        $this->exchange = $exchange;
+        $this->exchangeName = $exchangeName;
         $this->routingKey = $routingKey;
     }
 
     /**
      * @return string
      */
-    public function getExchange()
+    public function getExchangeName()
     {
-        return $this->exchange;
+        return $this->exchangeName;
     }
 
     /**
