@@ -3,7 +3,6 @@ namespace IvixLabs\RabbitmqBundle\Client;
 
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
-use IvixLabs\RabbitmqBundle\Message\MessageWrapper;
 
 class Producer
 {
