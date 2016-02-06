@@ -71,14 +71,8 @@ class Consumer
             foreach ($consumers as list($taskClass, $method, $annotation)) {
 
                 $connectionStorage = $this->connectionFactory->getConnectionStorage($annotation->connectionName);
-                $queue = $connectionStorage->getQueue($annotation->queueName);
-                $exchange = $connectionStorage->getExchange($annotation->exchangeName);
-
-                $queueName = $queue->getName();
-                if (strpos($queueName, 'amq.gen') === 0) {
-                    $queue->bind($exchange->getName(), $annotation->routingKey);
-                }
-
+                $connectionStorage->getQueue($annotation->queueName);
+                $connectionStorage->getExchange($annotation->exchangeName);
             }
         }
 
