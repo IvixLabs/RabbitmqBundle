@@ -66,13 +66,14 @@ class Consumer
          * @var \ReflectionMethod $method
          * @var Annotation\Consumer $annotation
          */
-        foreach ($this->taskClasses as list($taskClass, $method, $annotation)) {
+        foreach ($this->taskClasses as $consumers) {
+            foreach ($consumers as list($taskClass, $method, $annotation)) {
 
-            $connectionStorage = $this->connectionFactory->getConnectionStorage($annotation->connectionName);
-            $queue = $connectionStorage->getQueue($annotation->queueName);
-            $exchange = $connectionStorage->getExchange($annotation->exchangeName);
+                $connectionStorage = $this->connectionFactory->getConnectionStorage($annotation->connectionName);
+                $connectionStorage->getQueue($annotation->queueName);
+                $connectionStorage->getExchange($annotation->exchangeName);
 
-            $queue->bind($exchange->getName(), $annotation->routingKey);
+            }
         }
 
         $queues = $this->connectionFactory->getAllQueues();
