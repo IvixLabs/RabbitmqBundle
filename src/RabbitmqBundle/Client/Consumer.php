@@ -48,7 +48,7 @@ class Consumer
                             'channel=' . $annotation->channelName,
                             'exchange=' . $annotation->exchangeName,
                             'queue=' . $annotation->queueName,
-                            'routeKey=' . $annotation->routingKey
+                            'routingKey=' . $annotation->routingKey
                         ]);
                         throw new \LogicException($msg);
                     }
@@ -96,9 +96,27 @@ class Consumer
             $exchangeName = $connectionStorage->getExchangeName($msg->getExchangeName());
             $queueName = $connectionStorage->getQueueName($queue->getName());
 
+            $routingKey = $msg->getRoutingKey();
 
             $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' .
-                $queueName . '_' . $msg->getRoutingKey();
+                $queueName . '_' . $routingKey;
+            if (!isset($this->taskClasses[$id])) {
+                $id = $connectionName . '_' . $channelName . '_' . $exchangeName . '_' .
+                    $queueName . '_';
+            }
+
+            if (isset($this->taskClasses[$id])) {
+                $msg = 'Consumer not found: ';
+                $msg .= implode(', ', [
+                    'connection=' . $connectionName,
+                    'channel=' . $channelName,
+                    'exchange=' . $exchangeName,
+                    'queue=' . $queueName,
+                    'routingKey=' . $routingKey
+                ]);
+                throw new \LogicException($msg);
+            }
+
             /** @var \Closure $method */
             /** @var MessageInterface $taskClass */
             list($taskClass, $method) = $this->taskClasses[$id];
