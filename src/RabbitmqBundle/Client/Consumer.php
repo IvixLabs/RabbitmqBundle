@@ -2,8 +2,8 @@
 namespace IvixLabs\RabbitmqBundle\Client;
 
 use IvixLabs\RabbitmqBundle\Annotation;
-use IvixLabs\RabbitmqBundle\Command\ExitException;
-use IvixLabs\RabbitmqBundle\Command\RejectMessageException;
+use IvixLabs\RabbitmqBundle\Exception\ExitConsumerWorkerException;
+use IvixLabs\RabbitmqBundle\Exception\RejectMessageException;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -141,7 +141,7 @@ class Consumer
                     $mainQueue->nack($msg->getDeliveryTag());
                     $isAsk = false;
                     break;
-                } catch (ExitException $e) {
+                } catch (ExitConsumerWorkerException $e) {
                     $isContinue = false;
                 }
 
