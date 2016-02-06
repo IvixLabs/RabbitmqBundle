@@ -2,6 +2,7 @@
 namespace IvixLabs\RabbitmqBundle\Client;
 
 use IvixLabs\RabbitmqBundle\Annotation;
+use IvixLabs\RabbitmqBundle\Command\ExitException;
 use IvixLabs\RabbitmqBundle\Command\RejectMessageException;
 use IvixLabs\RabbitmqBundle\Connection\ConnectionFactory;
 use IvixLabs\RabbitmqBundle\Message\MessageInterface;
@@ -70,8 +71,13 @@ class Consumer
             foreach ($consumers as list($taskClass, $method, $annotation)) {
 
                 $connectionStorage = $this->connectionFactory->getConnectionStorage($annotation->connectionName);
-                $connectionStorage->getQueue($annotation->queueName);
-                $connectionStorage->getExchange($annotation->exchangeName);
+                $queue = $connectionStorage->getQueue($annotation->queueName);
+                $exchange = $connectionStorage->getExchange($annotation->exchangeName);
+
+                $queueName = $queue->getName();
+                if (strpos($queueName, 'amq.gen') === 0) {
+                    $queue->bind($exchange->getName(), $annotation->routingKey);
+                }
 
             }
         }
@@ -125,6 +131,7 @@ class Consumer
             }
 
             $isAsk = true;
+            $isContinue = true;
             foreach ($consumers as list($taskClass, $method)) {
                 /** @var \Closure $method */
                 /** @var MessageInterface $taskClass */
@@ -140,6 +147,8 @@ class Consumer
                     $mainQueue->nack($msg->getDeliveryTag());
                     $isAsk = false;
                     break;
+                } catch (ExitException $e) {
+                    $isContinue = false;
                 }
 
             }
@@ -147,6 +156,8 @@ class Consumer
             if ($isAsk) {
                 $mainQueue->ack($msg->getDeliveryTag());
             }
+
+            return $isContinue;
         };
 
         $mainQueue->consume($callback);
