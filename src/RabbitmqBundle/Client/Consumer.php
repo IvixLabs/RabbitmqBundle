@@ -26,18 +26,20 @@ class Consumer
         $methods = $reflectionClass->getMethods();
         foreach ($methods as $method) {
             $methodAnnotations = $reader->getMethodAnnotations($method);
-            $parameters = $method->getParameters();
-            $taskClassName = false;
-            if (!empty($parameters)) {
-                $taskClass = $parameters[0]->getClass();
-                $isMessage = $taskClass->implementsInterface('IvixLabs\RabbitmqBundle\Message\MessageInterface');
-                if (!$isMessage) {
-                    throw new \InvalidArgumentException('Task must implmenet IvixLabs\RabbitmqBundle\Message\MessageInterface');
-                }
-                $taskClassName = $taskClass->getName();
-            }
             foreach ($methodAnnotations AS $annotation) {
                 if ($annotation instanceof Annotation\Consumer) {
+
+                    $parameters = $method->getParameters();
+                    $taskClassName = false;
+                    if (!empty($parameters)) {
+                        $taskClass = $parameters[0]->getClass();
+                        $isMessage = $taskClass->implementsInterface('IvixLabs\RabbitmqBundle\Message\MessageInterface');
+                        if (!$isMessage) {
+                            throw new \InvalidArgumentException('Task must implmenet IvixLabs\RabbitmqBundle\Message\MessageInterface');
+                        }
+                        $taskClassName = $taskClass->getName();
+                    }
+
                     $key = $this->getTaskClassKey($annotation);
                     $this->taskClasses[$key] = [
                         $taskClassName,
