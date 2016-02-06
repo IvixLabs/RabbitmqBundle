@@ -233,7 +233,7 @@ class ConnectionStorage
                 foreach ($settings['bind_exchanges'] as $binExchangeName => $routingKeys) {
                     $bindExchange = $this->getExchange($binExchangeName, $channelName);
                     foreach ($routingKeys as $routingKey) {
-                        $exchange->bind($bindExchange->getName(), $routingKey);
+                        $bindExchange->bind($exchange->getName(), $routingKey);
                     }
                 }
             }
