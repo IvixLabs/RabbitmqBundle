@@ -42,7 +42,7 @@ class Configuration implements ConfigurationInterface
                             ->booleanNode('passive')->defaultFalse()->end()
                             ->booleanNode('autoDelete')->defaultTrue()->end()
                             ->arrayNode('bind_exchanges')
-                                ->prototype('scalar')->end()
+                                ->prototype('array')->end()
                             ->end()
                         ->end()
                     ->end()
