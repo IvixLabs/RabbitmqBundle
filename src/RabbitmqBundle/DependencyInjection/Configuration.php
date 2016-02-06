@@ -30,7 +30,7 @@ class Configuration implements ConfigurationInterface
                             ->booleanNode('exclusive')->defaultFalse()->end()
                             ->booleanNode('autoDelete')->defaultTrue()->end()
                             ->booleanNode('passive')->defaultFalse()->end()
-                            ->arrayNode('bind_exchanges')->useAttributeAsKey('name')
+                            ->arrayNode('from_exchanges')->useAttributeAsKey('name')
                                 ->prototype('array')
                                     ->prototype('scalar')->end()
                                 ->end()
@@ -46,7 +46,7 @@ class Configuration implements ConfigurationInterface
                             ->booleanNode('durable')->defaultTrue()->end()
                             ->booleanNode('passive')->defaultFalse()->end()
                             ->booleanNode('autoDelete')->defaultTrue()->end()
-                            ->arrayNode('bind_exchanges')->useAttributeAsKey('name')
+                            ->arrayNode('to_exchanges')->useAttributeAsKey('name')
                                 ->prototype('array')->
                                     prototype('scalar')->end()
                                 ->end()
