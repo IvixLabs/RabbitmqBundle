@@ -41,6 +41,17 @@ class Consumer
                     }
 
                     $key = $this->getTaskClassKey($annotation);
+                    if (isset($this->taskClasses[$key])) {
+                        $msg = 'Consumer like it already registered: ';
+                        $msg .= implode(', ', [
+                            'connection=' . $annotation->connectionName,
+                            'channel=' . $annotation->channelName,
+                            'exchange=' . $annotation->exchangeName,
+                            'queue=' . $annotation->queueName,
+                            'routeKey=' . $annotation->routingKey
+                        ]);
+                        throw new \LogicException($msg);
+                    }
                     $this->taskClasses[$key] = [
                         $taskClassName,
                         $method->getClosure($consumerWorker),
