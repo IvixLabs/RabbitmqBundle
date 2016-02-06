@@ -208,6 +208,9 @@ class ConnectionStorage
                 if ($settings['passive']) {
                     $queueFlags |= AMQP_PASSIVE;
                 }
+                if ($settings['autoDelete']) {
+                    $queueFlags |= AMQP_AUTODELETE;
+                }
                 $exchange->setType($this->getExchangeType($settings['type']));
                 $exchange->setFlags($queueFlags);
                 $exchange->declareExchange();

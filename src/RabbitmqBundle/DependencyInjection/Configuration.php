@@ -40,6 +40,7 @@ class Configuration implements ConfigurationInterface
                             ->scalarNode('type')->defaultValue('direct')->end()
                             ->booleanNode('durable')->defaultTrue()->end()
                             ->booleanNode('passive')->defaultFalse()->end()
+                            ->booleanNode('autoDelete')->defaultTrue()->end()
                         ->end()
                     ->end()
                 ->end()
